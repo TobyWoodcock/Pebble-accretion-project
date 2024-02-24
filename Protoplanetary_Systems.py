@@ -160,15 +160,33 @@ class Disc:
 class Protoplanet(Planet):
     '''A class used to represent a developing protoplanet. Extends Planet.
     
-    '''
-    M : float
+    Attributes
+    ----------
+    M                   : total mass (float) [g]
+    Z                   : solid mass fraction (float) [none]
+    fsolid              : mass fractions of solid components (dict) [none]
+    R                   : core radius (float) [cm]
+    rho                 : core density (float) [g / cm^3]
+    disc                : protoplanetary disc (Disc)
+    a                   : semimajor axis (float) [cm]
+    Mdot                : mass flux (float) [g / s]
+    vmig                : migration velocity (float) [cm / s]
+    pebble accretion    : ability to accrete pebbles (bool)
+    tau_growth          : growth timescale (float) [s]
+    tau_mig             : migration timescale (float) [s]
     
+    '''
     def __init__(self, disc : Disc = Disc(), a : float = 1 * au, M: float = 0.001 * ME, t: float = year):
-        
+        self.t_points = []
+        self.M_points = []
+        self.a_points = []
+        self.Z_points = []
+        self.f_points = {el : [] for el in self.rhoConst}
         self.disc = disc
-        self.a = a
+        super().__init__(disc.S, a, M, 1, disc.fDust(a))
+        
         self.t = t
-        super().__init__(M, 1, disc.fDust(a))
+        
 
         
     @property
@@ -177,18 +195,42 @@ class Protoplanet(Planet):
     @M.setter
     def M(self, M):
         self.pebble_accretion = M < self.disc.Miso(self.a)
-
         if hasattr(self,'M'):
             if self.pebble_accretion:
                 for el in self.fsolid:
-                    self.fsolid[el] = (self.fsolid[el] * self.M + self.disc.fDust(self.a) * (M - self.M)) / M
+                    self.fsolid[el] = (self.fsolid[el] * self.M + self.disc.fDust(self.a)[el] * (M - self.M)) / M
+
             else:
                 self.Z = self.Z * self.M / M
-        
+        self.Z_points.append(self.Z)
+
+        for el, f in self.fsolid.items():
+            self.f_points[el].append(f)
+
         self._M = M
+        self.M_points.append(M) 
 
+    @property
+    def a(self):
+        return self._a
+    @a.setter
+    def a(self, a):
+        rgrid = self.disc.rgrid
+        self.migration = rgrid[1] < a < rgrid[-1]
+        a = np.clip(a, rgrid[1], rgrid[-1])
+        self._a = a
+        self.a_points.append(a)
 
-        
+    @property
+    def t(self):
+        return self._t
+    @t.setter
+    def t(self, t):
+        tgrid = self.disc.tgrid
+        self.simulation = t < tgrid[-1]
+        t = np.clip(t, tgrid[0], tgrid[-1])
+        self._t = t
+        self.t_points.append(t)
         
     
     @property
@@ -197,6 +239,10 @@ class Protoplanet(Planet):
     
     @Mdot.getter
     def Mdot(self):
+        '''
+        mass flux of material onto the planet. Pebble accretion using `pebble-predictor` and `epsilon.tar.gz`. Gas accretion adapted from equations 32, 33, and 34 of Jesper Nielsen et al. 2023
+        
+        '''
         disc : Disc = self.disc
         if self.pebble_accretion:
             eta = disc.eta(self.a)
@@ -206,7 +252,7 @@ class Protoplanet(Planet):
             rp = self.R / self.a
             qp = self.M / disc.S.M
 
-            self.eff = OL18.epsilon_general(tau = st, qp = qp, eta = eta, hgas = disc.hgas(self.a), alphaz = disc.alpha, Rp = rp)
+            self.eff = OL18.epsilon_general(tau = st, qp = qp, eta = -1 * eta, hgas = disc.hgas(self.a), alphaz = disc.alpha, Rp = rp)
 
             Mdot = self.eff * flux
         
@@ -228,11 +274,71 @@ class Protoplanet(Planet):
 
     @vmig.getter
     def vmig(self):
-        disc = self.disc
-        k_mig = 2 * (1.36 + 0.62 * disc.beta * 0.43 * disc.zeta)
-        v_mig = -k_mig * self.M * disc.SigmaGas(self.a) * self.a ** 2 / ((disc.S.M * disc.hgas(self.a)) ** 2) * self.a * disc.S.OmegaK(self.a)
-        v_mig /= (1 + (self.M /(2.3 * disc.Miso(self.a))) ** 2)
+        '''
+        migration velocity of planet. Adapted from equations 9, 10, and 11 of Jesper Nielsen et al. 2023
         
-        self.tau_mig = np.abs(self.a / v_mig)
+        '''
+        if self.migration:
+            disc = self.disc
+            k_mig = 2 * (1.36 + 0.62 * disc.beta * 0.43 * disc.zeta)
+            v_mig = -k_mig * self.M * disc.SigmaGas(self.a) * self.a ** 2 / ((disc.S.M * disc.hgas(self.a)) ** 2) * self.a * disc.S.OmegaK(self.a)
+            v_mig /= (1 + (self.M /(2.3 * disc.Miso(self.a))) ** 2)
+            
+            self.tau_mig = np.abs(self.a / v_mig)
         
-        return v_mig 
+        else: 
+            v_mig = 0
+        
+        return v_mig
+    
+    def plot(self):
+        f, ax = plt.subplots(2,2, figsize = (14,6), sharex = True)
+
+        if self.a_points[0] > self.disc.Rsl and self.a <= self.disc.Rsl:
+            RSLi = self.a_points.index(min(self.a_points, key = lambda a: abs(a - self.disc.Rsl)))
+            ax[0][0].axvline(x = self.t_points[RSLi] / year, linestyle = ':', color = 'tab:cyan')
+            ax[1][0].axvline(x = self.t_points[RSLi] / year, linestyle = ':', color = 'tab:cyan')
+            ax[0][1].axhline(y = self.disc.Rsl / au, linestyle = ':', color = 'tab:cyan')
+        
+        if self.Z < 1:
+            Misoi = len(self.Z_points) - list(reversed(self.Z_points)).index(1)
+            ax[0][0].plot(self.t_points[Misoi] / year, self.M_points[Misoi] / ME, 'o', color = 'black')
+            ax[0][0].plot(np.array(self.t_points) / year, self.disc.Miso(np.array(self.a_points)) / ME, color = 'grey', label = '$M_\\text{total}$', linestyle = '--', alpha = 0.6)
+        
+        ax[0][0].loglog(np.array(self.t_points) / year, np.array(self.M_points) / ME, color = 'black', label = '$M_\\text{total}$')
+
+
+        colors = ['tab:red', 'tab:grey', 'tab:blue']
+        colors.reverse()
+
+
+        ax[1][0].plot(np.array(self.t_points) / year, 1 - np.array(self.Z_points), '--', label = 'gas', color = 'black')
+
+        for el, c in zip(self.fsolid, colors):
+            ax[1][0].plot(np.array(self.t_points) / year, np.array(self.Z_points) * np.array(self.f_points[el]), color = c, label = el)
+
+        ax[1][0].set_xscale('log')
+
+        ax[0][0].set_ylabel('Mass [$M_\\oplus$]')
+        ax[1][0].set_xlabel('time [yr]')
+        ax[1][1].set_xlabel('time [yr]')
+        ax[1][0].set_ylabel('Mass fraction')
+        ax[1][0].legend()
+        ax[0][1].set_ylabel('orbital radius [au]')
+        ax[0][1].set_xlim(right = 1e7)
+
+        ax[0][1].loglog(np.array(self.t_points) / year, np.array(self.a_points) / au, color = 'white')
+
+        xmin, xmax = ax[0][1].get_xlim()
+        ymin, ymax = ax[0][1].get_ylim()
+
+        xmini, xmaxi = (self.disc.tgrid/year).searchsorted(xmin), (self.disc.tgrid/year).searchsorted(xmax)
+        ymini, ymaxi = (self.disc.rgrid/au).searchsorted(ymin), (self.disc.rgrid/au).searchsorted(ymax)
+
+        x = ax[0][1].imshow(self.disc.flux_array[xmini:xmaxi, ymini:ymaxi] / ME * year, aspect = 'auto', extent = (xmin, xmax, ymin, ymax), norm = 'log')
+
+        f.colorbar(x, label = 'Pebble mass flux [$M_\\oplus$ yr$^{-1}$]')
+
+
+
+

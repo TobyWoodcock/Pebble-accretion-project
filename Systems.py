@@ -38,29 +38,42 @@ class Star:
         self.P = Period
 
     def OmegaK(self, r): 
+        '''Keplerian orbital frequency of a body of negligable mass with respect to the stellar mass at radius r. Adapted from Kepler's third law'''
         return np.sqrt(Grav * self. M / r ** 3)    
 
 class Planet:
-    rhoConst =  {'ice' : 0.95, 'gas' : 1.326, 'rock' : 5.6, 'iron' : 10} 
+    rhoConst =  {'ice' : 0.95, 'rock' : 5.6, 'iron' : 10} 
     
     '''
-    A class to represent a planet. 
+    A class to represent a planet as a solid core surrounded in a gaseous envelope. Core is modelled as 
     
     Attributes
     ----------
-    M       : Total mass (float) [g]
+    M       : total mass (float) [g]
     Z       : solid mass fraction (float) [none]
     fsolid  : mass fractions of solid components (dict) [none]
-    fgas    : mass fractions of gaseous components (dict) [none]
-    R       : Total radius (float) [cm]
-    rho     : average (float) [g / cm^3]
+    R       : core radius (float) [cm]
+    rho     : core density (float) [g / cm^3]
+    T       : orbital period (float) [s]
     '''
 
-    def __init__(self, M : float, Z : float, fsolid : dict):
+    def __init__(self, star : Star, a : float, M : float, Z : float, fsolid : dict):
         self.fsolid = fsolid
+        self.a = a
+        self.star = star
         self.Z = Z
         self.M = M
     
+    @property
+    def T(self):
+        return self._T
+    @T.getter
+    def T(self):
+        return 2 * np.pi / self.star.OmegaK(self.a)
+    @T.setter
+    def T(self, T):
+        self.a = (Grav * self.star.M / (4 * np.pi ** 2) * T ** 2) ** (1 / 3)
+        self.T = T
     
     @property
     def rho(self):
