@@ -21,15 +21,15 @@ Combining these processes and phenomena, we are able to create a basic picture o
 ## Code
 To capture the complexity of astronomical objects, we use the Python class system. Two basic classes are implemented, which could be transferrable to other projects focused on simulating planetary physics, these are the star and planet classes. 
 - The star class has basic functionaliy relevant to the project. A star object is created with a mass and period of rotation. The former is used in a method to calculate the Keplerian orbital frequency of any other body in its vicinity, the latter to calculate the corotation radius in a later stage. 
-- The planet class has features that allow for a more detailed analysis. A planet object is created with an initial mass, chemical composition, orbital radius and solid fraction. Given the planet's mass, the chemical composition and solid fraction enable the calculation of the average density and radius of its solid core. Given a star, its orbital radius reveals its orbital period. All of these quantities are encoded as properties of the class. Crucially, this means they are calculated upon retreavel from an object.
+- The planet class has features that allow for a more detailed analysis. A planet object is created with an initial mass, chemical composition, orbital radius and solid fraction. Given the planet's mass, the chemical composition and solid fraction enable the calculation of the average density and radius of its solid core. Given a star, a planet's orbital radius reveals its orbital period. All of these quantities are encoded as properties of the class. Crucially, this means they are calculated upon retrieval from an object.
 
 In the project files, the basic classes are defined in systems.py
 
 (Sidenote: using the properties feature has advantages and drawbacks when it comes to efficiency. It is best used for quantities that requre computationally untensive calculations, and that change frequently, as each time a property is retrieved, its value is calculated again in the 'getter' function. For more involved quantities, it is better to do the calculation before beginning a loop, or at the start of each stage of the loop, and assigning the constant calculated value to the object. This way, the program does not need to repeatedly calculate the same quantity)
 
 Two more specialised classes are now added, the disc class, and the protoplanet class, which inherits functionality from the planet class.
-- the disc class has a broad range of attributes, including a central star object, a total mass, and a radial grid.
-- 
+- the disc class has a broad range of attributes, including a central star object, a total mass and a dust-to-gas ratio. These quantities enable the calculation of density and temperature gradients in the disc, which in turn may be used to locate the snowline. Most notably, the disc class has a radial grid and a temporal grid, which `pebble predictor` utilises in order to forecast the pebble flux in the disc. `pebble predictor` returns a two-dimensional array of fluxes over the combined grid
+- the protoplanet class adds attributes to the planet class, enabling the simulation of protoplanetary evolution in a disc. 
 
 
 
