@@ -7,9 +7,9 @@ MPhys project to investigate the formation of planets in protoplanetary discs as
 To model the formation of a planet through pebble and gas accretion, we use [Python](https://www.python.org). We make use of [`pebble-predictor`](https://github.com/astrojoanna/pebble-predictor.git) by [Dr. Joanna Drążkowska](https://www2.mps.mpg.de/homes/drazkowska/Home.html) to predict the populations of pebbles and their sizes in the protoplanetary disc and [`epsilon`](https://staff.fnwi.uva.nl/c.w.ormel/software.html) by [Chris Ormel](https://staff.fnwi.uva.nl/c.w.ormel/index.html) and [Beibei Liu](https://sites.google.com/view/beibei-liu/) to estimate the efficiency of Pebble accretion onto a protoplanet. 
 
 Using these Python modules, we incorporate three main processes
- 1. Pebble accretion driven by the drift of small solids from the outer disc which we forecast using `pebble-predictor` as a 'pebble flux'
- 2. Planetary migration as a result of gravitational forces exerted on the protoplanet by the disc
- 3. Gas accretion through the collapse of a gas cloud surrounding a protoplanet
+ 1. Pebble accretion driven by the drift of small solids from the outer disc which we forecast using `pebble-predictor` as a 'pebble flux'. `pebble-predictor` also predicts the size of the pebble in the disc which is used by `epsilon` to calculate the efficiency of pebble accretion onto a planet
+ 2. Planetary migration as a result of gravitational forces exerted on the protoplanet by the disc, following the approach of [Nielsen et al. 2023](https://arxiv.org/abs/2308.15504)
+ 3. Gas accretion through the collapse of a gas cloud surrounding a protoplanet, also following Nielsen et al. 2023
 
 We implement three principle physical phenomena that affect the rate of accretion
 - The water snowline, the radius of the disc at which water transitions from being found in liquid form to as solid ice
@@ -17,6 +17,10 @@ We implement three principle physical phenomena that affect the rate of accretio
 - The corotation radius, the inner radius of the disc at which gas no longer lies in a central 'midplane', and protoplanets stop migrating
 
 Combining these processes and phenomena, we are able to create a basic picture of a protoplanet's evolution in a protoplanetary disc, beginning from an intial embryo. We use numerical integration to simulate how the mass, orbital radius and density of a protoplanet would change over time as a result of these processes. 
+
+![image](https://github.com/user-attachments/assets/ea947af8-6ff9-49f4-abcc-9eb06061f5e5)
+
+^ an example plot showing the growth and migration of a protoplanet in two different types of discs
 
 ## Code
 To capture the complexity of astronomical objects, we use the Python class system. Two basic classes are implemented, which could be transferrable to other projects focused on simulating planetary physics, these are the star and planet classes. 
@@ -33,5 +37,6 @@ Two more specialised classes are now added, the disc class, and the protoplanet 
 
 
 
+![image](https://github.com/user-attachments/assets/a7d4d866-4ae9-41ab-b9f2-543c1d6a5643)
 
 
