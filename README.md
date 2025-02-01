@@ -33,7 +33,7 @@ In the project files, the basic classes are defined in systems.py
 
 Two more specialised classes are now added, the disc class, and the protoplanet class, which inherits functionality from the planet class.
 - the disc class has a broad range of attributes, including a central star object, a total mass and a dust-to-gas ratio. These quantities enable the calculation of density and temperature gradients in the disc, which in turn may be used to locate the snowline. Most notably, the disc class has a radial grid and a temporal grid, which `pebble predictor` utilises in order to forecast the pebble flux in the disc. `pebble predictor` returns a two-dimensional array of fluxes over the combined grid
-- the protoplanet class adds attributes to the planet class, enabling the simulation of protoplanetary evolution in a disc. 
+- the protoplanet class adds attributes to the planet class, enabling the simulation of protoplanetary evolution in a disc. Fundamentally, it has a disc object: its host protoplanetary disc. It uses 
 
 
 
